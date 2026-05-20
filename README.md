@@ -28,7 +28,7 @@ This repository contains first-pass Open WebUI plugin files that expose MemPalac
 This is an initial scaffold. The plugins are intentionally conservative:
 
 - Writes are valve-gated.
-- Delete/update tools are disabled by default.
+- Delete/update tools are disabled by default; write tools are valve-gated.
 - Automatic outlet harvesting is disabled by default.
 - The first implementation assumes a single MemPalace palace path unless configured otherwise.
 

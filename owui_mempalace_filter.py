@@ -13,8 +13,9 @@ Default behavior:
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Optional
+from urllib.parse import quote
 
 try:
     from pydantic import BaseModel, Field
@@ -126,8 +127,8 @@ class Filter:
         if not assistant:
             return body
 
-        chat_id = str(body.get("chat_id") or (__metadata__ or {}).get("chat_id") or "unknown")
-        assistant_id = str(assistant.get("id") or body.get("id") or self._hash_messages(messages))
+        chat_id = self._uri_part(body.get("chat_id") or (__metadata__ or {}).get("chat_id") or "unknown")
+        assistant_id = self._uri_part(assistant.get("id") or body.get("id") or self._hash_messages(messages))
         source_file = f"open-webui://chat/{chat_id}/checkpoint/{assistant_id}"
         content = self._checkpoint_content(chat_id, user_count, messages)
 
@@ -142,15 +143,18 @@ class Filter:
                 added_by=self._added_by(__user__),
             )
             if __event_emitter__:
-                await __event_emitter__(
-                    {
-                        "type": "status",
-                        "data": {
-                            "description": f"MemPalace checkpoint: {result.get('reason') or result.get('drawer_id') or result}",
-                            "done": True,
-                        },
-                    }
-                )
+                try:
+                    await __event_emitter__(
+                        {
+                            "type": "status",
+                            "data": {
+                                "description": f"MemPalace checkpoint: {result.get('reason') or result.get('drawer_id') or result}",
+                                "done": True,
+                            },
+                        }
+                    )
+                except Exception:
+                    pass
         except Exception as exc:
             # Fail open and preserve the generated answer.
             body.setdefault("metadata", {})["mempalace_harvest_error"] = str(exc)
@@ -231,7 +235,7 @@ class Filter:
             f"Open WebUI MemPalace checkpoint",
             f"chat_id: {chat_id}",
             f"user_messages: {user_count}",
-            f"created_at: {datetime.utcnow().isoformat()}Z",
+            f"created_at: {datetime.now(UTC).isoformat()}",
             "",
         ]
         for msg in recent:
@@ -253,3 +257,6 @@ class Filter:
         if isinstance(__user__, dict):
             user_id = str(__user__.get("id") or __user__.get("email") or "unknown")
         return f"open-webui-filter:{user_id}"
+
+    def _uri_part(self, value: Any) -> str:
+        return quote(str(value), safe="")
