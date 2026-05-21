@@ -1,4 +1,10 @@
 """
+title: MemPalace Tools
+author: Keith
+version: 0.1.0
+description: Open WebUI tools wrapping MemPalace Python handlers.
+requirements: mempalace>=3.3.5
+
 Open WebUI Tools: MemPalace
 
 Upload this file as an Open WebUI Tool plugin.
@@ -10,6 +16,7 @@ transport/process lifecycle work.
 
 from __future__ import annotations
 
+import os
 from typing import Any, Optional
 from urllib.parse import quote
 
@@ -38,8 +45,11 @@ class Valves(BaseModel):
         description="Allow destructive delete operations. Disabled by default.",
     )
     enable_kg_tools: bool = Field(
-        default=True,
-        description="Expose MemPalace knowledge graph tools.",
+        default=False,
+        description=(
+            "Expose MemPalace knowledge graph tools. Disabled by default until "
+            "MemPalace KG storage honors MEMPALACE_PALACE_PATH for direct imports."
+        ),
     )
     max_search_results: int = Field(
         default=10,
@@ -51,6 +61,10 @@ class Valves(BaseModel):
         default="open-webui",
         description="Prefix used in MemPalace metadata for Open WebUI-originated writes.",
     )
+    palace_path: str = Field(
+        default="/app/backend/data/mempalace",
+        description="MemPalace palace directory for Open WebUI persistent storage.",
+    )
 
 
 class Tools:
@@ -60,6 +74,18 @@ class Tools:
     # ---------------------------------------------------------------------
     # Internal helpers
     # ---------------------------------------------------------------------
+
+    def _ensure_palace_path(self) -> None:
+        """Set the MemPalace palace path before the lazy runtime import."""
+        palace_path = str(getattr(self.valves, "palace_path", "") or "").strip()
+        if palace_path and not os.environ.get("MEMPALACE_PALACE_PATH", "").strip():
+            os.environ["MEMPALACE_PALACE_PATH"] = palace_path
+
+    def _mcp_server(self):
+        self._ensure_palace_path()
+        from mempalace import mcp_server
+
+        return mcp_server
 
     def _clamp_limit(self, limit: int, default: int = 5) -> int:
         try:
@@ -89,27 +115,19 @@ class Tools:
 
     def mempalace_status(self) -> dict:
         """Return MemPalace status, including drawer counts and health information."""
-        from mempalace.mcp_server import tool_status
-
-        return tool_status()
+        return self._mcp_server().tool_status()
 
     def mempalace_list_wings(self) -> dict:
         """List all MemPalace wings with drawer counts."""
-        from mempalace.mcp_server import tool_list_wings
-
-        return tool_list_wings()
+        return self._mcp_server().tool_list_wings()
 
     def mempalace_list_rooms(self, wing: Optional[str] = None) -> dict:
         """List MemPalace rooms, optionally scoped to a wing."""
-        from mempalace.mcp_server import tool_list_rooms
-
-        return tool_list_rooms(wing=wing)
+        return self._mcp_server().tool_list_rooms(wing=wing)
 
     def mempalace_get_taxonomy(self) -> dict:
         """Return the full MemPalace wing -> room -> count taxonomy."""
-        from mempalace.mcp_server import tool_get_taxonomy
-
-        return tool_get_taxonomy()
+        return self._mcp_server().tool_get_taxonomy()
 
     def mempalace_search(
         self,
@@ -124,9 +142,7 @@ class Tools:
 
         Keep query short and focused. Use wing and room filters when known.
         """
-        from mempalace.mcp_server import tool_search
-
-        return tool_search(
+        return self._mcp_server().tool_search(
             query=query,
             limit=self._clamp_limit(limit),
             wing=wing,
@@ -137,15 +153,11 @@ class Tools:
 
     def mempalace_check_duplicate(self, content: str, threshold: float = 0.9) -> dict:
         """Check whether similar content already exists in MemPalace."""
-        from mempalace.mcp_server import tool_check_duplicate
-
-        return tool_check_duplicate(content=content, threshold=threshold)
+        return self._mcp_server().tool_check_duplicate(content=content, threshold=threshold)
 
     def mempalace_get_drawer(self, drawer_id: str) -> dict:
         """Fetch a single MemPalace drawer by ID."""
-        from mempalace.mcp_server import tool_get_drawer
-
-        return tool_get_drawer(drawer_id=drawer_id)
+        return self._mcp_server().tool_get_drawer(drawer_id=drawer_id)
 
     def mempalace_list_drawers(
         self,
@@ -155,9 +167,7 @@ class Tools:
         offset: int = 0,
     ) -> dict:
         """List MemPalace drawers with optional wing/room filters and pagination."""
-        from mempalace.mcp_server import tool_list_drawers
-
-        return tool_list_drawers(
+        return self._mcp_server().tool_list_drawers(
             wing=wing,
             room=room,
             limit=self._clamp_limit(limit, default=20),
@@ -181,9 +191,7 @@ class Tools:
         if not self.valves.enable_write_tools:
             return {"success": False, "error": "MemPalace write tools are disabled"}
 
-        from mempalace.mcp_server import tool_add_drawer
-
-        return tool_add_drawer(
+        return self._mcp_server().tool_add_drawer(
             wing=wing,
             room=room,
             content=content,
@@ -204,18 +212,14 @@ class Tools:
         if not self.valves.enable_update_tools:
             return {"success": False, "error": "MemPalace update tools are disabled"}
 
-        from mempalace.mcp_server import tool_update_drawer
-
-        return tool_update_drawer(drawer_id=drawer_id, content=content, wing=wing, room=room)
+        return self._mcp_server().tool_update_drawer(drawer_id=drawer_id, content=content, wing=wing, room=room)
 
     def mempalace_delete_drawer(self, drawer_id: str) -> dict:
         """Delete a MemPalace drawer by ID. This is irreversible and disabled by default."""
         if not self.valves.enable_delete_tools:
             return {"success": False, "error": "MemPalace delete tools are disabled"}
 
-        from mempalace.mcp_server import tool_delete_drawer
-
-        return tool_delete_drawer(drawer_id=drawer_id)
+        return self._mcp_server().tool_delete_drawer(drawer_id=drawer_id)
 
     # ---------------------------------------------------------------------
     # Diary tools
@@ -234,13 +238,11 @@ class Tools:
         if not self.valves.enable_write_tools:
             return {"success": False, "error": "MemPalace write tools are disabled"}
 
-        from mempalace.mcp_server import tool_diary_write
-
         # Include minimal provenance in the entry rather than relying only on metadata.
         source = self._source_uri(__metadata__, fallback="diary")
         user_id = (__user__ or {}).get("id", "unknown") if isinstance(__user__, dict) else "unknown"
         enriched = f"{entry}\nSRC:{source}|USER:{user_id}"
-        return tool_diary_write(agent_name=agent_name, entry=enriched, topic=topic, wing=wing)
+        return self._mcp_server().tool_diary_write(agent_name=agent_name, entry=enriched, topic=topic, wing=wing)
 
     def mempalace_diary_read(
         self,
@@ -249,9 +251,7 @@ class Tools:
         wing: Optional[str] = None,
     ) -> dict:
         """Read recent MemPalace diary entries for an agent."""
-        from mempalace.mcp_server import tool_diary_read
-
-        return tool_diary_read(agent_name=agent_name, limit=self._clamp_limit(limit), wing=wing)
+        return self._mcp_server().tool_diary_read(agent_name=agent_name, limit=self._clamp_limit(limit), wing=wing)
 
     # ---------------------------------------------------------------------
     # Knowledge graph tools
@@ -267,9 +267,7 @@ class Tools:
         if not self.valves.enable_kg_tools:
             return {"error": "MemPalace knowledge graph tools are disabled"}
 
-        from mempalace.mcp_server import tool_kg_query
-
-        return tool_kg_query(entity=entity, as_of=as_of, direction=direction)
+        return self._mcp_server().tool_kg_query(entity=entity, as_of=as_of, direction=direction)
 
     def mempalace_kg_add(
         self,
@@ -288,9 +286,7 @@ class Tools:
         if not self.valves.enable_kg_tools:
             return {"success": False, "error": "MemPalace knowledge graph tools are disabled"}
 
-        from mempalace.mcp_server import tool_kg_add
-
-        return tool_kg_add(
+        return self._mcp_server().tool_kg_add(
             subject=subject,
             predicate=predicate,
             object=object,
@@ -313,24 +309,18 @@ class Tools:
         if not self.valves.enable_kg_tools:
             return {"success": False, "error": "MemPalace knowledge graph tools are disabled"}
 
-        from mempalace.mcp_server import tool_kg_invalidate
-
-        return tool_kg_invalidate(subject=subject, predicate=predicate, object=object, ended=ended)
+        return self._mcp_server().tool_kg_invalidate(subject=subject, predicate=predicate, object=object, ended=ended)
 
     def mempalace_kg_timeline(self, entity: Optional[str] = None) -> dict:
         """Return chronological knowledge graph facts, optionally for one entity."""
         if not self.valves.enable_kg_tools:
             return {"error": "MemPalace knowledge graph tools are disabled"}
 
-        from mempalace.mcp_server import tool_kg_timeline
-
-        return tool_kg_timeline(entity=entity)
+        return self._mcp_server().tool_kg_timeline(entity=entity)
 
     def mempalace_kg_stats(self) -> dict:
         """Return MemPalace knowledge graph statistics."""
         if not self.valves.enable_kg_tools:
             return {"error": "MemPalace knowledge graph tools are disabled"}
 
-        from mempalace.mcp_server import tool_kg_stats
-
-        return tool_kg_stats()
+        return self._mcp_server().tool_kg_stats()

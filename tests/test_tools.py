@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from owui_mempalace_tools import Tools
 
 
@@ -107,9 +109,37 @@ def test_default_tool_valves_match_safety_design():
     assert tools.valves.enable_write_tools is True
     assert tools.valves.enable_update_tools is False
     assert tools.valves.enable_delete_tools is False
-    assert tools.valves.enable_kg_tools is True
+    assert tools.valves.enable_kg_tools is False
+    assert tools.valves.palace_path == "/app/backend/data/mempalace"
     assert tools.valves.max_search_results == 10
 
+
+
+def test_tools_set_default_palace_path_before_import(fake_mempalace, monkeypatch):
+    monkeypatch.delenv("MEMPALACE_PALACE_PATH", raising=False)
+    tools = Tools()
+
+    tools.mempalace_status()
+
+    assert os.environ["MEMPALACE_PALACE_PATH"] == "/app/backend/data/mempalace"
+
+
+def test_tools_preserve_existing_palace_path_env(fake_mempalace, monkeypatch):
+    monkeypatch.setenv("MEMPALACE_PALACE_PATH", "/custom/palace")
+    tools = Tools()
+
+    tools.mempalace_status()
+
+    assert os.environ["MEMPALACE_PALACE_PATH"] == "/custom/palace"
+
+
+def test_tools_replace_blank_palace_path_env(fake_mempalace, monkeypatch):
+    monkeypatch.setenv("MEMPALACE_PALACE_PATH", "   ")
+    tools = Tools()
+
+    tools.mempalace_status()
+
+    assert os.environ["MEMPALACE_PALACE_PATH"] == "/app/backend/data/mempalace"
 
 def test_read_tools_delegate_to_mempalace_handlers(fake_mempalace):
     tools = Tools()
@@ -245,6 +275,7 @@ def test_added_by_fallbacks(fake_mempalace):
 
 def test_kg_happy_paths_and_source_fallbacks(fake_mempalace):
     tools = Tools()
+    tools.valves.enable_kg_tools = True
 
     query = tools.mempalace_kg_query("Open WebUI", as_of="2026-05-20", direction="outgoing")
     add = tools.mempalace_kg_add(
@@ -291,6 +322,7 @@ def test_diary_write_is_write_gated(fake_mempalace):
 def test_kg_invalidate_is_write_gated(fake_mempalace):
     tools = Tools()
     tools.valves.enable_write_tools = False
+    tools.valves.enable_kg_tools = True
 
     result = tools.mempalace_kg_invalidate("Open WebUI", "uses", "MemPalace")
 
