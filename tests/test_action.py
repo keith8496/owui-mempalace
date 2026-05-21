@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 
 from owui_mempalace_action import Action
 
@@ -148,7 +149,17 @@ def test_default_action_valves_match_design():
     assert action.valves.default_room == "conversations"
     assert action.valves.dry_run is False
     assert action.valves.max_exchanges == 100
+    assert action.valves.palace_path == "/app/backend/data/mempalace"
 
+
+
+def test_action_sets_default_palace_path_before_import(fake_mempalace, sample_messages, monkeypatch):
+    monkeypatch.delenv("MEMPALACE_PALACE_PATH", raising=False)
+    action = Action()
+
+    run(action.action({"chat_id": "chat-1", "messages": sample_messages[:2]}))
+
+    assert os.environ["MEMPALACE_PALACE_PATH"] == "/app/backend/data/mempalace"
 
 def test_action_rejects_invalid_message_shape(fake_mempalace):
     action = Action()

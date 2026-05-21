@@ -103,15 +103,17 @@ This gives MemPalace deterministic source metadata and makes duplicate preventio
 
 ## Deployment modes
 
-### Single-user local
+### Single-user Open WebUI
 
-Use the default palace path:
+Use the Open WebUI persistent data path as the MemPalace palace path:
 
 ```text
-~/.mempalace/palace
+/app/backend/data/mempalace
 ```
 
-This is the simplest and is the assumed first target.
+The plugins set `MEMPALACE_PALACE_PATH` to this value before lazy-importing MemPalace when the variable is unset or blank. Operators should still prefer setting it explicitly in the Open WebUI backend environment.
+
+Knowledge graph tools are disabled by default until upstream MemPalace KG storage honors `MEMPALACE_PALACE_PATH` during direct Python handler imports. See [MemPalace issue #1568](https://github.com/MemPalace/mempalace/issues/1568). Until that fix is verified, Docker deployments should also persist MemPalace's legacy default palace directory (`~/.mempalace/palace`) as a compatibility safety net.
 
 ### Multi-user Open WebUI
 

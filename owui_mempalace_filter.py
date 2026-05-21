@@ -1,4 +1,10 @@
 """
+title: MemPalace Recall and Harvest Filter
+author: Keith
+version: 0.1.0
+description: Open WebUI filter for MemPalace recall injection and optional checkpoint harvesting.
+requirements: mempalace>=3.3.5
+
 Open WebUI Filter: MemPalace recall and optional checkpoint harvesting.
 
 Upload this file as an Open WebUI Filter function.
@@ -13,6 +19,7 @@ Default behavior:
 from __future__ import annotations
 
 import hashlib
+import os
 from datetime import UTC, datetime
 from typing import Any, Optional
 from urllib.parse import quote
@@ -40,11 +47,27 @@ class Valves(BaseModel):
     harvest_wing: str = Field(default="open_webui", description="Wing for automatic checkpoints.")
     harvest_room: str = Field(default="checkpoints", description="Room for automatic checkpoints.")
     harvest_max_chars: int = Field(default=12000, ge=1000, le=50000)
+    palace_path: str = Field(
+        default="/app/backend/data/mempalace",
+        description="MemPalace palace directory for Open WebUI persistent storage.",
+    )
 
 
 class Filter:
     def __init__(self) -> None:
         self.valves = Valves()
+
+    def _ensure_palace_path(self) -> None:
+        """Set the MemPalace palace path before the lazy runtime import."""
+        palace_path = str(getattr(self.valves, "palace_path", "") or "").strip()
+        if palace_path and not os.environ.get("MEMPALACE_PALACE_PATH", "").strip():
+            os.environ["MEMPALACE_PALACE_PATH"] = palace_path
+
+    def _mcp_server(self):
+        self._ensure_palace_path()
+        from mempalace import mcp_server
+
+        return mcp_server
 
     async def inlet(
         self,
@@ -70,9 +93,7 @@ class Filter:
             return body
 
         try:
-            from mempalace.mcp_server import tool_search
-
-            result = tool_search(
+            result = self._mcp_server().tool_search(
                 query=query,
                 limit=max(1, int(self.valves.recall_limit)),
                 wing=self.valves.recall_wing or None,
@@ -133,9 +154,7 @@ class Filter:
         content = self._checkpoint_content(chat_id, user_count, messages)
 
         try:
-            from mempalace.mcp_server import tool_add_drawer
-
-            result = tool_add_drawer(
+            result = self._mcp_server().tool_add_drawer(
                 wing=self.valves.harvest_wing,
                 room=self.valves.harvest_room,
                 content=content,

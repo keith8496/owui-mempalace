@@ -60,6 +60,29 @@ def test_plugins_only_use_approved_open_webui_source_uri_prefix():
 
 
 
+
+def test_plugin_files_declare_open_webui_metadata_and_mempalace_requirement():
+    expected_titles = {
+        "owui_mempalace_tools.py": "title: MemPalace Tools",
+        "owui_mempalace_filter.py": "title: MemPalace Recall and Harvest Filter",
+        "owui_mempalace_action.py": "title: Save Chat to MemPalace",
+    }
+    for path in PLUGIN_FILES:
+        text = path.read_text(encoding="utf-8")
+        header = text.split('"""', 2)[1]
+        assert expected_titles[path.name] in header
+        assert "version: 0.1.0" in header
+        assert "requirements: mempalace>=3.3.5" in header
+
+
+def test_plugins_still_import_mempalace_lazily_despite_requirements_metadata():
+    for path in PLUGIN_FILES:
+        text = path.read_text(encoding="utf-8")
+        body_after_docstring = text.split('"""', 2)[2]
+        assert "requirements: mempalace" not in body_after_docstring
+        assert "import mempalace" not in body_after_docstring
+        assert "from mempalace import" in body_after_docstring
+
 def test_plugins_import_in_subprocess_without_mempalace_runtime():
     import os
     import subprocess

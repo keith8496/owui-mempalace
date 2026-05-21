@@ -30,19 +30,40 @@ This is an initial scaffold. The plugins are intentionally conservative:
 - Writes are valve-gated.
 - Delete/update tools are disabled by default; write tools are valve-gated.
 - Automatic outlet harvesting is disabled by default.
-- The first implementation assumes a single MemPalace palace path unless configured otherwise.
+- Knowledge graph tools are disabled by default until upstream MemPalace KG storage honors `MEMPALACE_PALACE_PATH` for direct Python imports.
+- The first implementation assumes a single MemPalace palace path under `/app/backend/data/mempalace` unless configured otherwise.
 
 ## Requirements
 
 - Open WebUI with custom tools/functions enabled.
 - Python environment where `mempalace` can be imported by the Open WebUI backend.
-- MemPalace initialized at the configured palace path, usually:
+- MemPalace initialized at the Open WebUI persistent data path:
+
+```text
+/app/backend/data/mempalace
+```
+
+The plugins set `MEMPALACE_PALACE_PATH` to that path before lazy-importing MemPalace when the environment variable is unset or blank. Prefer setting the same value explicitly in the Open WebUI backend environment.
+
+Until [MemPalace issue #1568](https://github.com/MemPalace/mempalace/issues/1568) is fixed and verified in Open WebUI, also persist MemPalace's legacy default palace directory in Docker so accidental/default-path writes survive container restarts:
 
 ```text
 ~/.mempalace/palace
 ```
 
-For local development, install MemPalace into the Open WebUI backend environment:
+Each plugin file declares Open WebUI metadata with:
+
+```text
+requirements: mempalace>=3.3.5
+```
+
+Open WebUI should install MemPalace and its Python dependencies automatically when the plugin is loaded. If automatic installation fails or your deployment disables plugin-managed installs, install MemPalace manually in the Open WebUI backend environment:
+
+```bash
+pip install "mempalace>=3.3.5"
+```
+
+For local editable development, install from a checkout instead:
 
 ```bash
 pip install -e /home/u7de088ca/projects/mempalace
@@ -86,7 +107,8 @@ Chat harvesting uses either:
 The initial defaults are designed to avoid surprising data movement:
 
 - Recall enabled by default.
-- Write tools enabled by default, but delete tools disabled.
+- Write tools enabled by default, but update/delete tools disabled.
+- Knowledge graph tools disabled by default; see [MemPalace issue #1568](https://github.com/MemPalace/mempalace/issues/1568).
 - Automatic harvesting disabled by default.
 - Historical/bulk import not implemented in plugin v0; it should be added with dry-run first.
 

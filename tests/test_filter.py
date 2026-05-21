@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 
 from owui_mempalace_filter import Filter
 
@@ -122,7 +123,17 @@ def test_default_filter_valves_match_safety_design():
     assert filt.valves.enable_harvest is False
     assert filt.valves.recall_limit == 5
     assert filt.valves.harvest_room == "checkpoints"
+    assert filt.valves.palace_path == "/app/backend/data/mempalace"
 
+
+
+def test_filter_sets_default_palace_path_before_import(fake_mempalace, monkeypatch):
+    monkeypatch.delenv("MEMPALACE_PALACE_PATH", raising=False)
+    filt = Filter()
+
+    run(filt.inlet({"messages": [{"role": "user", "content": "query"}]}))
+
+    assert os.environ["MEMPALACE_PALACE_PATH"] == "/app/backend/data/mempalace"
 
 def test_inlet_appends_to_existing_system_message(fake_mempalace):
     filt = Filter()

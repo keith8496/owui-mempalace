@@ -1,4 +1,10 @@
 """
+title: Save Chat to MemPalace
+author: Keith
+version: 0.1.0
+description: Open WebUI action for saving user/assistant exchanges to MemPalace.
+requirements: mempalace>=3.3.5
+
 Open WebUI Action: Save current chat to MemPalace.
 
 Upload this file as an Open WebUI Action function.
@@ -11,6 +17,7 @@ exchange as a MemPalace drawer with deterministic Open WebUI provenance.
 from __future__ import annotations
 
 import hashlib
+import os
 from typing import Any, Optional
 from urllib.parse import quote
 
@@ -29,11 +36,27 @@ class Valves(BaseModel):
     dry_run: bool = Field(default=False, description="Preview counts without writing to MemPalace.")
     max_exchanges: int = Field(default=100, ge=1, le=1000, description="Maximum exchanges per action run.")
     max_exchange_chars: int = Field(default=20000, ge=1000, le=100000)
+    palace_path: str = Field(
+        default="/app/backend/data/mempalace",
+        description="MemPalace palace directory for Open WebUI persistent storage.",
+    )
 
 
 class Action:
     def __init__(self) -> None:
         self.valves = Valves()
+
+    def _ensure_palace_path(self) -> None:
+        """Set the MemPalace palace path before the lazy runtime import."""
+        palace_path = str(getattr(self.valves, "palace_path", "") or "").strip()
+        if palace_path and not os.environ.get("MEMPALACE_PALACE_PATH", "").strip():
+            os.environ["MEMPALACE_PALACE_PATH"] = palace_path
+
+    def _mcp_server(self):
+        self._ensure_palace_path()
+        from mempalace import mcp_server
+
+        return mcp_server
 
     async def action(
         self,
@@ -78,7 +101,7 @@ class Action:
             }
 
         try:
-            from mempalace.mcp_server import tool_add_drawer
+            tool_add_drawer = self._mcp_server().tool_add_drawer
         except Exception as exc:
             return {"success": False, "error": f"Failed to import MemPalace: {exc}"}
 
