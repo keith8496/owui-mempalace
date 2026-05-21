@@ -123,7 +123,7 @@ Multi-user deployments need stricter isolation. Options:
 2. per-user palace paths;
 3. a separate MemPalace bridge service that isolates process/global state per user.
 
-The first plugin version does not guarantee multi-user isolation beyond metadata tagging.
+The first plugin version does not guarantee multi-user isolation beyond metadata tagging. For multi-worker deployments, the roadmap is to add an OWUI-side Redis write lock around plugin-originated writes while leaving recall/search unlocked by default. Longer-term storage backend changes, including Postgres/PGVector, should land in upstream MemPalace or a MemPalace backend package rather than in these plugin files. See [roadmap.md](roadmap.md).
 
 ## Why not stdio MCP first?
 

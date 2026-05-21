@@ -22,6 +22,15 @@ For local editable development, install from a checkout instead:
 pip install -e /home/u7de088ca/projects/mempalace
 ```
 
+For experiments that require an unreleased MemPalace backend, install a fork or branch into the same Open WebUI backend environment instead of relying on PyPI:
+
+```bash
+pip uninstall -y mempalace
+pip install "mempalace @ git+https://github.com/<owner>/mempalace.git@<branch>"
+```
+
+Keep this repository's plugin files storage-agnostic; backend selection should be handled by MemPalace environment/config. See [roadmap.md](roadmap.md) for the Redis write-lock and Postgres/PGVector paths.
+
 Verify from the same environment that runs Open WebUI:
 
 ```bash
