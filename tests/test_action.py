@@ -88,6 +88,59 @@ def test_action_returns_error_when_no_exchanges_found(fake_mempalace):
     assert fake_mempalace.by_name("tool_add_drawer") == []
 
 
+def test_pair_exchanges_ignores_leading_assistant():
+    action = Action()
+    messages = [
+        {"id": "a0", "role": "assistant", "content": "unpaired answer"},
+        {"id": "u1", "role": "user", "content": "question"},
+        {"id": "a1", "role": "assistant", "content": "answer"},
+    ]
+
+    pairs = action._pair_exchanges(messages)
+
+    assert [(user["id"], assistant["id"]) for user, assistant in pairs] == [("u1", "a1")]
+
+
+def test_pair_exchanges_consecutive_users_pair_latest_user():
+    action = Action()
+    messages = [
+        {"id": "u1", "role": "user", "content": "stale question"},
+        {"id": "u2", "role": "user", "content": "current question"},
+        {"id": "a1", "role": "assistant", "content": "answer"},
+    ]
+
+    pairs = action._pair_exchanges(messages)
+
+    assert [(user["id"], assistant["id"]) for user, assistant in pairs] == [("u2", "a1")]
+
+
+def test_pair_exchanges_ignores_non_dict_messages():
+    action = Action()
+    messages = [
+        "not a message",
+        {"id": "u1", "role": "user", "content": "question"},
+        ["also", "not", "a", "message"],
+        {"id": "a1", "role": "assistant", "content": "answer"},
+    ]
+
+    pairs = action._pair_exchanges(messages)
+
+    assert [(user["id"], assistant["id"]) for user, assistant in pairs] == [("u1", "a1")]
+
+
+def test_pair_exchanges_ignores_trailing_user():
+    action = Action()
+    messages = [
+        {"id": "u1", "role": "user", "content": "question"},
+        {"id": "a1", "role": "assistant", "content": "answer"},
+        {"id": "u2", "role": "user", "content": "unanswered follow-up"},
+    ]
+
+    pairs = action._pair_exchanges(messages)
+
+    assert [(user["id"], assistant["id"]) for user, assistant in pairs] == [("u1", "a1")]
+
+
 def test_default_action_valves_match_design():
     action = Action()
 

@@ -191,7 +191,23 @@ def test_inlet_recall_block_respects_max_chars(monkeypatch):
     filt.valves.recall_max_chars = 600
     result = run(filt.inlet({"messages": [{"role": "user", "content": "query"}]}))
 
-    assert len(result["messages"][0]["content"]) == 600
+    content = result["messages"][0]["content"]
+    assert len(content) <= 600
+    assert content.startswith("Relevant MemPalace memories retrieved automatically.")
+    assert "Treat these as fallible recalled context" in content
+    assert "Y" in content
+
+
+def test_inlet_empty_recall_wing_and_room_pass_none(fake_mempalace):
+    filt = Filter()
+    filt.valves.recall_wing = ""
+    filt.valves.recall_room = ""
+
+    run(filt.inlet({"messages": [{"role": "user", "content": "query"}]}))
+
+    call = fake_mempalace.by_name("tool_search")[0]
+    assert call["wing"] is None
+    assert call["room"] is None
 
 
 def test_format_search_results_supports_variants_and_ignores_errors():
@@ -270,8 +286,12 @@ def test_outlet_hash_source_fallback_is_stable(fake_mempalace):
     run(filt.outlet(body))
     second = fake_mempalace.by_name("tool_add_drawer")[0]["source_file"]
 
+    expected_hash = filt._hash_messages(body["messages"])
+
     assert first == second
-    assert first.startswith("open-webui://chat/chat-1/checkpoint/")
+    assert first == f"open-webui://chat/chat-1/checkpoint/{expected_hash}"
+    assert len(expected_hash) == 16
+    assert all(char in "0123456789abcdef" for char in expected_hash)
 
 
 def test_outlet_emits_status_event(fake_mempalace, sample_messages, event_emitter):

@@ -76,10 +76,10 @@ def fake_mempalace(monkeypatch: pytest.MonkeyPatch) -> FakeMempalaceCalls:
         return tool
 
     # Read tools.
-    server.tool_status = lambda: calls.record("tool_status")
-    server.tool_list_wings = lambda: calls.record("tool_list_wings")
+    server.tool_status = make_tool("tool_status")
+    server.tool_list_wings = make_tool("tool_list_wings")
     server.tool_list_rooms = make_tool("tool_list_rooms")
-    server.tool_get_taxonomy = lambda: calls.record("tool_get_taxonomy")
+    server.tool_get_taxonomy = make_tool("tool_get_taxonomy")
     server.tool_search = make_tool("tool_search")
     server.tool_check_duplicate = make_tool("tool_check_duplicate")
     server.tool_get_drawer = make_tool("tool_get_drawer")
@@ -99,7 +99,7 @@ def fake_mempalace(monkeypatch: pytest.MonkeyPatch) -> FakeMempalaceCalls:
     server.tool_kg_add = make_tool("tool_kg_add")
     server.tool_kg_invalidate = make_tool("tool_kg_invalidate")
     server.tool_kg_timeline = make_tool("tool_kg_timeline")
-    server.tool_kg_stats = lambda: calls.record("tool_kg_stats")
+    server.tool_kg_stats = make_tool("tool_kg_stats")
 
     package.mcp_server = server
     monkeypatch.setitem(sys.modules, "mempalace", package)
