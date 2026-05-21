@@ -11,6 +11,7 @@ transport/process lifecycle work.
 from __future__ import annotations
 
 from typing import Any, Optional
+from urllib.parse import quote
 
 try:
     from pydantic import BaseModel, Field
@@ -27,6 +28,10 @@ class Valves(BaseModel):
     enable_write_tools: bool = Field(
         default=True,
         description="Allow tools that add/update memories. Disable for read-only deployments.",
+    )
+    enable_update_tools: bool = Field(
+        default=False,
+        description="Allow updating existing drawers. Disabled by default.",
     )
     enable_delete_tools: bool = Field(
         default=False,
@@ -71,9 +76,12 @@ class Tools:
 
     def _source_uri(self, __metadata__: Optional[dict], fallback: str = "manual") -> str:
         metadata = __metadata__ if isinstance(__metadata__, dict) else {}
-        chat_id = metadata.get("chat_id") or "unknown"
-        message_id = metadata.get("message_id") or metadata.get("id") or fallback
+        chat_id = self._uri_part(metadata.get("chat_id") or "unknown")
+        message_id = self._uri_part(metadata.get("message_id") or metadata.get("id") or fallback)
         return f"open-webui://chat/{chat_id}/message/{message_id}"
+
+    def _uri_part(self, value: Any) -> str:
+        return quote(str(value), safe="")
 
     # ---------------------------------------------------------------------
     # Read tools
@@ -193,6 +201,8 @@ class Tools:
         """Update an existing drawer's content and/or wing/room metadata."""
         if not self.valves.enable_write_tools:
             return {"success": False, "error": "MemPalace write tools are disabled"}
+        if not self.valves.enable_update_tools:
+            return {"success": False, "error": "MemPalace update tools are disabled"}
 
         from mempalace.mcp_server import tool_update_drawer
 

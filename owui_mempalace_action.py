@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 from typing import Any, Optional
+from urllib.parse import quote
 
 try:
     from pydantic import BaseModel, Field
@@ -47,24 +48,27 @@ class Action:
         if not isinstance(messages, list):
             return {"success": False, "error": "No message list provided to action"}
 
-        chat_id = str(
-            body.get("chat_id")
-            or body.get("id")
-            or (__metadata__ or {}).get("chat_id")
-            or "unknown"
-        )
+        chat_id_raw = body.get("chat_id") or body.get("id") or (__metadata__ or {}).get("chat_id") or "unknown"
+        chat_id = str(chat_id_raw)
+        chat_uri_id = self._uri_part(chat_id_raw)
         exchanges = self._pair_exchanges(messages)[: int(self.valves.max_exchanges)]
         if not exchanges:
             return {"success": False, "error": "No user/assistant exchanges found"}
 
         if __event_emitter__:
-            await self._emit(__event_emitter__, f"MemPalace: preparing {len(exchanges)} exchanges", done=False)
+            await self._emit_best_effort(__event_emitter__, f"MemPalace: preparing {len(exchanges)} exchanges", done=False)
 
         imported = 0
         skipped = 0
         errors: list[str] = []
 
         if self.valves.dry_run:
+            if __event_emitter__:
+                await self._emit_best_effort(
+                    __event_emitter__,
+                    f"MemPalace dry run: would write {len(exchanges)} exchanges",
+                    done=True,
+                )
             return {
                 "success": True,
                 "dry_run": True,
@@ -79,9 +83,9 @@ class Action:
             return {"success": False, "error": f"Failed to import MemPalace: {exc}"}
 
         for user_msg, assistant_msg in exchanges:
-            user_id = str(user_msg.get("id") or self._hash_message(user_msg))
-            assistant_id = str(assistant_msg.get("id") or self._hash_message(assistant_msg))
-            source_file = f"open-webui://chat/{chat_id}/exchange/{user_id}-{assistant_id}"
+            user_id = self._uri_part(user_msg.get("id") or self._hash_message(user_msg))
+            assistant_id = self._uri_part(assistant_msg.get("id") or self._hash_message(assistant_msg))
+            source_file = f"open-webui://chat/{chat_uri_id}/exchange/{user_id}-{assistant_id}"
             content = self._exchange_content(chat_id, user_msg, assistant_msg)
 
             try:
@@ -103,7 +107,7 @@ class Action:
                 errors.append(str(exc))
 
         if __event_emitter__:
-            await self._emit(
+            await self._emit_best_effort(
                 __event_emitter__,
                 f"MemPalace: imported {imported}, skipped {skipped}, errors {len(errors)}",
                 done=True,
@@ -179,3 +183,12 @@ class Action:
 
     async def _emit(self, emitter: Any, description: str, done: bool) -> None:
         await emitter({"type": "status", "data": {"description": description, "done": done}})
+
+    async def _emit_best_effort(self, emitter: Any, description: str, done: bool) -> None:
+        try:
+            await self._emit(emitter, description, done)
+        except Exception:
+            pass
+
+    def _uri_part(self, value: Any) -> str:
+        return quote(str(value), safe="")
