@@ -124,6 +124,9 @@ def test_default_filter_valves_match_safety_design():
     assert filt.valves.recall_limit == 5
     assert filt.valves.harvest_room == "checkpoints"
     assert filt.valves.palace_path == "/app/backend/data/mempalace"
+    assert filt.valves.use_redis_write_lock is False
+    assert filt.valves.redis_harvest_lock_ttl_seconds == 300
+    assert filt.valves.redis_lock_wait_seconds == 2
 
 
 

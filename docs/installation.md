@@ -77,7 +77,30 @@ mempalace --palace /app/backend/data/mempalace init /path/to/project-or-memory-r
 mempalace --palace /app/backend/data/mempalace mine /path/to/project-or-memory-root
 ```
 
-## 3. Install the Open WebUI plugins
+## 3. Development source vs deployable plugin files
+
+The repository now keeps editable source templates under `plugin_src/` and generates the deployable root plugin files from them.
+
+Editable sources:
+
+- `plugin_src/owui_mempalace_tools.src.py`
+- `plugin_src/owui_mempalace_filter.src.py`
+- `plugin_src/owui_mempalace_action.src.py`
+- `plugin_src/_shared_lock.py`
+
+Regenerate the uploadable plugin files with:
+
+```bash
+python scripts/generate_plugins.py
+```
+
+The generated root files remain the actual Open WebUI upload artifacts:
+
+- `owui_mempalace_tools.py`
+- `owui_mempalace_filter.py`
+- `owui_mempalace_action.py`
+
+## 4. Install the Open WebUI plugins
 
 Use Open WebUI's admin/plugin UI to load:
 
@@ -87,7 +110,7 @@ Use Open WebUI's admin/plugin UI to load:
 
 Exact upload steps may vary by Open WebUI version.
 
-## 4. Configure valves
+## 5. Configure valves
 
 Recommended initial settings:
 
@@ -98,6 +121,9 @@ Recommended initial settings:
 - `enable_kg_tools = false` until [MemPalace issue #1568](https://github.com/MemPalace/mempalace/issues/1568) is fixed
 - `palace_path = /app/backend/data/mempalace`
 - `max_search_results = 10`
+- `use_redis_write_lock = false` until Redis connectivity is verified in deployment
+- `redis_lock_ttl_seconds = 120`
+- `redis_lock_wait_seconds = 10`
 
 ### Filter
 
@@ -106,14 +132,22 @@ Recommended initial settings:
 - `recall_limit = 5`
 - `recall_max_chars = 4000`
 - `palace_path = /app/backend/data/mempalace`
+- `use_redis_write_lock = false` until Redis connectivity is verified in deployment
+- `redis_harvest_lock_ttl_seconds = 300`
+- `redis_lock_wait_seconds = 2`
 
 ### Action
 
 - `default_wing = open_webui`
 - `dry_run = true` for first manual tests if supported by the UI.
 - `palace_path = /app/backend/data/mempalace`
+- `use_redis_write_lock = false` until Redis connectivity is verified in deployment
+- `redis_harvest_lock_ttl_seconds = 300`
+- `redis_lock_wait_seconds = 10`
 
-## 5. Basic verification
+Redis-backed write locking uses the same backend environment Redis settings that Open WebUI typically uses, including `REDIS_URL` and `REDIS_KEY_PREFIX`, with optional Sentinel/cluster environment variables when present.
+
+## 6. Basic verification
 
 Ask a model with the tool enabled:
 

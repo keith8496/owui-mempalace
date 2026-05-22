@@ -112,6 +112,9 @@ def test_default_tool_valves_match_safety_design():
     assert tools.valves.enable_kg_tools is False
     assert tools.valves.palace_path == "/app/backend/data/mempalace"
     assert tools.valves.max_search_results == 10
+    assert tools.valves.use_redis_write_lock is False
+    assert tools.valves.redis_lock_ttl_seconds == 120
+    assert tools.valves.redis_lock_wait_seconds == 10
 
 
 
