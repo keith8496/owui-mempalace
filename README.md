@@ -22,6 +22,7 @@ This repository contains first-pass Open WebUI plugin files that expose MemPalac
 | `docs/installation.md` | Installation and setup notes. |
 | `docs/harvesting.md` | Chat harvesting strategy and safety model. |
 | `docs/testing.md` | Manual verification checklist. |
+| `docs/roadmap.md` | Concurrency/storage roadmap, including Redis write locking and Postgres/PGVector paths. |
 
 ## Current status
 
@@ -132,5 +133,7 @@ The initial defaults are designed to avoid surprising data movement:
 1. Load `owui_mempalace_tools.py` into Open WebUI and verify status/search/add-drawer.
 2. Load `owui_mempalace_filter.py` and verify recall injection.
 3. Enable action plugin and test current-chat harvesting on a disposable chat.
-4. Decide whether bulk harvesting belongs in an action plugin or a source-level Open WebUI backend route.
+4. Add optional Redis-backed write locking for OWUI-originated MemPalace writes in multi-worker deployments.
+5. Decide whether bulk harvesting belongs in an action plugin or a source-level Open WebUI backend route.
+6. Track upstream MemPalace Postgres/PGVector backend work for a future storage-backend v2; see `docs/roadmap.md`.
 
