@@ -171,53 +171,52 @@ except Exception:  # pragma: no cover - Open WebUI normally provides pydantic
         return default
 
 
-class Valves(BaseModel):
-    """Admin-level configuration for the MemPalace tool plugin."""
-
-    enable_write_tools: bool = Field(
-        default=True,
-        description="Allow tools that add/update memories. Disable for read-only deployments.",
-    )
-    enable_update_tools: bool = Field(
-        default=False,
-        description="Allow updating existing drawers. Disabled by default.",
-    )
-    enable_delete_tools: bool = Field(
-        default=False,
-        description="Allow destructive delete operations. Disabled by default.",
-    )
-    enable_kg_tools: bool = Field(
-        default=False,
-        description=(
-            "Expose MemPalace knowledge graph tools. Disabled by default until "
-            "MemPalace KG storage honors MEMPALACE_PALACE_PATH for direct imports."
-        ),
-    )
-    max_search_results: int = Field(
-        default=10,
-        ge=1,
-        le=100,
-        description="Maximum result count a model may request from search/list operations.",
-    )
-    default_added_by_prefix: str = Field(
-        default="open-webui",
-        description="Prefix used in MemPalace metadata for Open WebUI-originated writes.",
-    )
-    palace_path: str = Field(
-        default="/app/backend/data/mempalace",
-        description="MemPalace palace directory for Open WebUI persistent storage.",
-    )
-    use_redis_write_lock: bool = Field(
-        default=False,
-        description="Serialize MemPalace writes across OWUI workers with Redis.",
-    )
-    redis_lock_ttl_seconds: int = Field(default=120, ge=1, le=3600)
-    redis_lock_wait_seconds: int = Field(default=10, ge=0, le=120)
-
-
 class Tools:
+    class Valves(BaseModel):
+        """Admin-level configuration for the MemPalace tool plugin."""
+
+        enable_write_tools: bool = Field(
+            default=True,
+            description="Allow tools that add/update memories. Disable for read-only deployments.",
+        )
+        enable_update_tools: bool = Field(
+            default=False,
+            description="Allow updating existing drawers. Disabled by default.",
+        )
+        enable_delete_tools: bool = Field(
+            default=False,
+            description="Allow destructive delete operations. Disabled by default.",
+        )
+        enable_kg_tools: bool = Field(
+            default=False,
+            description=(
+                "Expose MemPalace knowledge graph tools. Disabled by default until "
+                "MemPalace KG storage honors MEMPALACE_PALACE_PATH for direct imports."
+            ),
+        )
+        max_search_results: int = Field(
+            default=10,
+            ge=1,
+            le=100,
+            description="Maximum result count a model may request from search/list operations.",
+        )
+        default_added_by_prefix: str = Field(
+            default="open-webui",
+            description="Prefix used in MemPalace metadata for Open WebUI-originated writes.",
+        )
+        palace_path: str = Field(
+            default="/app/backend/data/mempalace",
+            description="MemPalace palace directory for Open WebUI persistent storage.",
+        )
+        use_redis_write_lock: bool = Field(
+            default=False,
+            description="Serialize MemPalace writes across OWUI workers with Redis.",
+        )
+        redis_lock_ttl_seconds: int = Field(default=120, ge=1, le=3600)
+        redis_lock_wait_seconds: int = Field(default=10, ge=0, le=120)
+
     def __init__(self) -> None:
-        self.valves = Valves()
+        self.valves = self.Valves()
 
     # ---------------------------------------------------------------------
     # Internal helpers

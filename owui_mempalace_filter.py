@@ -174,32 +174,31 @@ except Exception:  # pragma: no cover
         return default
 
 
-class Valves(BaseModel):
-    enable_recall: bool = Field(default=True, description="Search MemPalace before each chat turn.")
-    recall_limit: int = Field(default=5, ge=1, le=20, description="Maximum recalled memories.")
-    recall_max_chars: int = Field(default=4000, ge=500, le=20000, description="Recall block cap.")
-    recall_max_distance: float = Field(default=1.5, description="MemPalace cosine distance cutoff.")
-    recall_wing: str = Field(default="", description="Optional wing filter for recall.")
-    recall_room: str = Field(default="", description="Optional room filter for recall.")
-    inject_mode: str = Field(default="system", description="system or first_user.")
-
-    enable_harvest: bool = Field(default=False, description="Enable outlet checkpoint harvesting.")
-    harvest_interval_user_messages: int = Field(default=15, ge=1, le=100)
-    harvest_wing: str = Field(default="open_webui", description="Wing for automatic checkpoints.")
-    harvest_room: str = Field(default="checkpoints", description="Room for automatic checkpoints.")
-    harvest_max_chars: int = Field(default=12000, ge=1000, le=50000)
-    palace_path: str = Field(
-        default="/app/backend/data/mempalace",
-        description="MemPalace palace directory for Open WebUI persistent storage.",
-    )
-    use_redis_write_lock: bool = Field(default=False, description="Serialize checkpoint writes with Redis.")
-    redis_harvest_lock_ttl_seconds: int = Field(default=300, ge=1, le=3600)
-    redis_lock_wait_seconds: int = Field(default=2, ge=0, le=120)
-
-
 class Filter:
+    class Valves(BaseModel):
+        enable_recall: bool = Field(default=True, description="Search MemPalace before each chat turn.")
+        recall_limit: int = Field(default=5, ge=1, le=20, description="Maximum recalled memories.")
+        recall_max_chars: int = Field(default=4000, ge=500, le=20000, description="Recall block cap.")
+        recall_max_distance: float = Field(default=1.5, description="MemPalace cosine distance cutoff.")
+        recall_wing: str = Field(default="", description="Optional wing filter for recall.")
+        recall_room: str = Field(default="", description="Optional room filter for recall.")
+        inject_mode: str = Field(default="system", description="system or first_user.")
+
+        enable_harvest: bool = Field(default=False, description="Enable outlet checkpoint harvesting.")
+        harvest_interval_user_messages: int = Field(default=15, ge=1, le=100)
+        harvest_wing: str = Field(default="open_webui", description="Wing for automatic checkpoints.")
+        harvest_room: str = Field(default="checkpoints", description="Room for automatic checkpoints.")
+        harvest_max_chars: int = Field(default=12000, ge=1000, le=50000)
+        palace_path: str = Field(
+            default="/app/backend/data/mempalace",
+            description="MemPalace palace directory for Open WebUI persistent storage.",
+        )
+        use_redis_write_lock: bool = Field(default=False, description="Serialize checkpoint writes with Redis.")
+        redis_harvest_lock_ttl_seconds: int = Field(default=300, ge=1, le=3600)
+        redis_lock_wait_seconds: int = Field(default=2, ge=0, le=120)
+
     def __init__(self) -> None:
-        self.valves = Valves()
+        self.valves = self.Valves()
 
     def _ensure_palace_path(self) -> None:
         """Set the MemPalace palace path before the lazy runtime import."""

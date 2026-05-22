@@ -30,24 +30,23 @@ except Exception:  # pragma: no cover
         return default
 
 
-class Valves(BaseModel):
-    default_wing: str = Field(default="open_webui", description="Wing used for harvested chats.")
-    default_room: str = Field(default="conversations", description="Room used for exchange drawers.")
-    dry_run: bool = Field(default=False, description="Preview counts without writing to MemPalace.")
-    max_exchanges: int = Field(default=100, ge=1, le=1000, description="Maximum exchanges per action run.")
-    max_exchange_chars: int = Field(default=20000, ge=1000, le=100000)
-    palace_path: str = Field(
-        default="/app/backend/data/mempalace",
-        description="MemPalace palace directory for Open WebUI persistent storage.",
-    )
-    use_redis_write_lock: bool = Field(default=False, description="Serialize harvested chat writes with Redis.")
-    redis_harvest_lock_ttl_seconds: int = Field(default=300, ge=1, le=3600)
-    redis_lock_wait_seconds: int = Field(default=10, ge=0, le=120)
-
-
 class Action:
+    class Valves(BaseModel):
+        default_wing: str = Field(default="open_webui", description="Wing used for harvested chats.")
+        default_room: str = Field(default="conversations", description="Room used for exchange drawers.")
+        dry_run: bool = Field(default=False, description="Preview counts without writing to MemPalace.")
+        max_exchanges: int = Field(default=100, ge=1, le=1000, description="Maximum exchanges per action run.")
+        max_exchange_chars: int = Field(default=20000, ge=1000, le=100000)
+        palace_path: str = Field(
+            default="/app/backend/data/mempalace",
+            description="MemPalace palace directory for Open WebUI persistent storage.",
+        )
+        use_redis_write_lock: bool = Field(default=False, description="Serialize harvested chat writes with Redis.")
+        redis_harvest_lock_ttl_seconds: int = Field(default=300, ge=1, le=3600)
+        redis_lock_wait_seconds: int = Field(default=10, ge=0, le=120)
+
     def __init__(self) -> None:
-        self.valves = Valves()
+        self.valves = self.Valves()
 
     def _ensure_palace_path(self) -> None:
         """Set the MemPalace palace path before the lazy runtime import."""
