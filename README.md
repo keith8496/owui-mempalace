@@ -35,7 +35,7 @@ This is an initial alpha scaffold. The plugins are intentionally conservative:
 - Automatic outlet harvesting is disabled by default.
 - Knowledge graph tools are disabled by default until upstream MemPalace KG storage honors `MEMPALACE_PALACE_PATH` for direct Python imports.
 - The first implementation assumes a single MemPalace palace path under `/app/backend/data/mempalace` unless configured otherwise.
-- Redis-backed OWUI-side write locking is scaffolded behind per-plugin valves and still needs live Open WebUI validation.
+- Redis-backed OWUI-side write locking is scaffolded behind per-plugin valves, remains experimental, and still needs live Open WebUI multi-worker validation.
 
 ## Requirements
 
@@ -116,7 +116,7 @@ The initial defaults are designed to avoid surprising data movement:
 - Write tools enabled by default, but update/delete tools disabled.
 - Knowledge graph tools disabled by default; see [MemPalace issue #1568](https://github.com/MemPalace/mempalace/issues/1568).
 - Automatic harvesting disabled by default.
-- Redis write locking disabled by default until explicitly configured and validated in deployment.
+- Redis write locking disabled by default until explicitly configured and manually validated in the target deployment.
 - Historical/bulk import not implemented in plugin v0; it should be added with dry-run first.
 
 ## Repository layout
@@ -172,13 +172,13 @@ The repo now includes automated pytest coverage for:
 - shared Redis write-lock helper behavior;
 - lock-unavailable behavior differences across tools, filter outlet, and action paths.
 
-Manual Open WebUI runtime verification is still required before calling a deployment path production-ready. See `docs/testing.md`.
+Manual Open WebUI runtime verification is still required before calling a deployment path production-ready. In particular, Redis write locking is unit-tested but not yet confirmed in a real multi-worker Open WebUI deployment. See `docs/testing.md`.
 
 ## Next implementation steps
 
 1. Load `owui_mempalace_tools.py` into Open WebUI and verify status/search/add-drawer.
 2. Load `owui_mempalace_filter.py` and verify recall injection.
 3. Enable action plugin and test current-chat harvesting on a disposable chat.
-4. Validate Redis-backed write locking in a live multi-worker Open WebUI deployment.
+4. Validate Redis-backed write locking in a live multi-worker Open WebUI deployment using the manual acceptance checklist in `docs/testing.md`.
 5. Decide whether bulk harvesting belongs in an action plugin or a source-level Open WebUI backend route.
 6. Track upstream MemPalace Postgres/PGVector backend work for a future storage-backend v2; see `docs/roadmap.md`.

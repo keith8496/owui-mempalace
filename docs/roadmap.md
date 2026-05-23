@@ -49,6 +49,12 @@ Approximate risk for a small multi-worker Open WebUI deployment:
 
 Because Open WebUI already uses Redis, the near-term hardening path is an optional Redis-backed write lock in the OWUI plugin layer.
 
+Current status:
+
+- lock helper and plugin integration are implemented behind valves;
+- unit tests cover helper behavior and lock-unavailable semantics;
+- the feature remains experimental because it has not yet been validated in a real multi-worker Open WebUI deployment with live Redis and live MemPalace writes.
+
 Purpose:
 
 - serialize OWUI-originated MemPalace writes across gunicorn/uvicorn worker processes;
@@ -101,7 +107,7 @@ Suggested initial defaults:
 
 | Setting | Initial value | Rationale |
 | --- | --- | --- |
-| `use_redis_write_lock` | `true` when Redis URL is configured | Opt-in/configured safety for multi-worker Open WebUI. |
+| `use_redis_write_lock` | `false` by default | Keep the feature opt-in until deployment validation is complete. |
 | `redis_lock_ttl_seconds` | `120` | Long enough for normal add/diary writes. |
 | `redis_harvest_lock_ttl_seconds` | `300` | Chat harvest can take longer than a single add. |
 | `redis_lock_wait_seconds` | `10` | Avoid hanging a chat request indefinitely. |
@@ -115,6 +121,7 @@ Implementation notes:
 - If a write can exceed its TTL, either use a larger TTL or add heartbeat renewal. Do not add bulk import without a separate maintenance design.
 - Keep automatic outlet harvesting disabled by default even after the Redis lock lands.
 - Log lock acquisition failures without leaking message content.
+- Use the manual acceptance checklist in `docs/testing.md` before enabling the feature in a non-disposable deployment.
 
 ## Longer-term path: Postgres/PGVector storage
 
@@ -179,8 +186,8 @@ For Docker, prefer a custom Open WebUI image or pinned wheel over installing fro
 ## Recommended sequencing
 
 1. Continue alpha testing with Chroma-backed MemPalace, conservative defaults, and explicit writes.
-2. Add optional Redis write locking around OWUI-originated writes.
-3. Add tests that simulate lock contention and verify explicit writes fail clearly while automatic harvesting skips safely.
+2. Keep optional Redis write locking implemented but disabled by default.
+3. Use automated tests to guard lock semantics and use manual runtime validation to decide whether the feature is safe to enable in deployment.
 4. Keep automatic outlet harvesting disabled by default.
 5. Track and/or test upstream Postgres backend work in a forked MemPalace environment.
 6. Only document Postgres as supported by this integration after full MemPalace handler round-trip is verified under Open WebUI.
@@ -193,3 +200,4 @@ For Docker, prefer a custom Open WebUI image or pinned wheel over installing fro
 - Keep delete/update tools disabled unless actively testing on disposable data.
 - Keep KG tools disabled unless the KG path behavior is verified in the deployment.
 - Back up MemPalace storage before enabling new write paths.
+- Treat Redis write locking as experimental until it passes the deployment acceptance checks in `docs/testing.md`.

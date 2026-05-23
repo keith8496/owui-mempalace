@@ -121,7 +121,7 @@ Recommended initial settings:
 - `enable_kg_tools = false` until [MemPalace issue #1568](https://github.com/MemPalace/mempalace/issues/1568) is fixed
 - `palace_path = /app/backend/data/mempalace`
 - `max_search_results = 10`
-- `use_redis_write_lock = false` until Redis connectivity is verified in deployment
+- `use_redis_write_lock = false` until Redis connectivity is verified and the manual runtime checks in `docs/testing.md` pass for your deployment
 - `redis_lock_ttl_seconds = 120`
 - `redis_lock_wait_seconds = 10`
 
@@ -132,7 +132,7 @@ Recommended initial settings:
 - `recall_limit = 5`
 - `recall_max_chars = 4000`
 - `palace_path = /app/backend/data/mempalace`
-- `use_redis_write_lock = false` until Redis connectivity is verified in deployment
+- `use_redis_write_lock = false` until Redis connectivity is verified and the manual runtime checks in `docs/testing.md` pass for your deployment
 - `redis_harvest_lock_ttl_seconds = 300`
 - `redis_lock_wait_seconds = 2`
 
@@ -141,11 +141,13 @@ Recommended initial settings:
 - `default_wing = open_webui`
 - `dry_run = true` for first manual tests if supported by the UI.
 - `palace_path = /app/backend/data/mempalace`
-- `use_redis_write_lock = false` until Redis connectivity is verified in deployment
+- `use_redis_write_lock = false` until Redis connectivity is verified and the manual runtime checks in `docs/testing.md` pass for your deployment
 - `redis_harvest_lock_ttl_seconds = 300`
 - `redis_lock_wait_seconds = 10`
 
 Redis-backed write locking uses the same backend environment Redis settings that Open WebUI typically uses, including `REDIS_URL` and `REDIS_KEY_PREFIX`, with optional Sentinel/cluster environment variables when present.
+
+Treat Redis write locking as experimental until it has been manually validated in the same Open WebUI worker/replica topology you plan to run.
 
 ## 6. Basic verification
 
