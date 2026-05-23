@@ -150,6 +150,9 @@ def test_default_action_valves_match_design():
     assert action.valves.dry_run is False
     assert action.valves.max_exchanges == 100
     assert action.valves.palace_path == "/app/backend/data/mempalace"
+    assert action.valves.use_redis_write_lock is False
+    assert action.valves.redis_harvest_lock_ttl_seconds == 300
+    assert action.valves.redis_lock_wait_seconds == 10
 
 
 
